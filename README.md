@@ -73,7 +73,7 @@ python main.py
 python -m uvicorn api:app --reload
 
 # 3) Em outro terminal, subir o frontend  ->  http://localhost:8501
-cd frontend
+cd ..\..\frontend
 streamlit run app.py
 ```
 
