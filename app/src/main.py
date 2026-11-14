@@ -10,7 +10,7 @@ import os
 import tempfile
 from dotenv import load_dotenv
 from s3File import upload_file
-from genres import add_genres_to_games
+from genres import GenreMapper
 from datetime import datetime
 
 load_dotenv()
@@ -42,7 +42,7 @@ def buscar_jogos(limit=100):
 
     if req.status_code == 200:
         dados = req.json()
-        dados_with_genres = add_genres_to_games(dados)
+        dados_with_genres = GenreMapper().add_to_games(dados)
         
         # Usar /tmp para arquivos temporários no Lambda
         temp_dir = tempfile.gettempdir()

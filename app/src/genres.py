@@ -1,34 +1,37 @@
-import pandas as pd
-import os
+import json
+import logging
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_GENRES_FILE = Path(__file__).resolve().parent / "data" / "list_genres.json"
 
 
-def add_genres_to_games(dados_with_genres):
+class GenreMapper:
+    """Converte IDs de gênero da IGDB em nomes (ex.: 12 -> 'Role-playing (RPG)').
+
+    O arquivo de gêneros é lido uma única vez, na criação do objeto, e fica
+    guardado em um dicionário {id: nome} (estado da instância).
     """
-    Adiciona nomes dos gêneros aos jogos baseado em ID de gênero.
-    
-    Args:
-        dados_with_genres (list): Lista de jogos com IDs de gêneros
-        
-    Returns:
-        list: Lista de jogos com nomes de gêneros
-    """
-    # Determinar o caminho do arquivo de gêneros (compatível com Lambda)
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    genres_file = os.path.join(current_dir, 'data', 'list_genres.json')
-    
-    if not os.path.exists(genres_file):
-        print(f"Aviso: Arquivo de gêneros não encontrado em {genres_file}")
-        return dados_with_genres
-    
-    list_generos = pd.read_json(genres_file)
-    
-    for jogo in dados_with_genres:
-        generos_jogo = []
-        for genero_id in jogo.get('genres', []):
-            genero_nome = list_generos.loc[list_generos['id'] == genero_id, 'name']
-            if not genero_nome.empty:
-                generos_jogo.append(genero_nome.values[0])
-        jogo['genres'] = generos_jogo
-    
-    return dados_with_genres
-    
+
+    def __init__(self, genres_file: Path | str | None = None):
+        path = Path(genres_file) if genres_file else DEFAULT_GENRES_FILE
+        self._by_id: dict[int, str] = self._load(path)
+
+    @staticmethod
+    def _load(path: Path) -> dict[int, str]:
+        if not path.exists():
+            logger.warning("Arquivo de gêneros não encontrado em %s", path)
+            return {}
+        with open(path, encoding="utf-8") as f:
+            return {g["id"]: g["name"] for g in json.load(f)}
+
+    def map_ids(self, ids: list[int] | None) -> list[str]:
+        """Devolve os nomes dos gêneros; IDs desconhecidos são ignorados."""
+        return [self._by_id[i] for i in (ids or []) if i in self._by_id]
+
+    def add_to_games(self, games: list[dict]) -> list[dict]:
+        """Troca, em cada jogo, a lista de IDs em 'genres' pelos nomes."""
+        for game in games:
+            game["genres"] = self.map_ids(game.get("genres"))
+        return games
