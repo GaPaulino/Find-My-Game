@@ -6,7 +6,6 @@
 """
 import requests
 import json
-import boto3
 import os
 import tempfile
 from dotenv import load_dotenv
@@ -90,8 +89,14 @@ def lambda_handler(event, context):
         
         # Enviar para S3
         try:
-            upload_file(BUCKET_NAME, arquivo_path)
-            
+            if not upload_file(BUCKET_NAME, arquivo_path):
+                return {
+                    'statusCode': 500,
+                    'body': json.dumps({
+                        'error': 'Falha ao fazer upload para o S3 (veja os logs)'
+                    })
+                }
+
             return {
                 'statusCode': 200,
                 'body': json.dumps({

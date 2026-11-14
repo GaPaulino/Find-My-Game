@@ -1,5 +1,7 @@
 requests
-pytest
 boto3
 pandas
 pyarrow
+python-dotenv
+numpy
+google-generativeai
