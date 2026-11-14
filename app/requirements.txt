@@ -5,3 +5,6 @@ pyarrow
 python-dotenv
 numpy
 google-genai
+fastapi
+mangum
+uvicorn
