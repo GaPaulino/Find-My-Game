@@ -67,12 +67,27 @@ class GeminiEmbedder(EmbeddingProvider):
                     config=types.EmbedContentConfig(task_type=task_type),
                 )
                 return [e.values for e in resp.embeddings]
-            except Exception:
+            except Exception as exc:
                 if attempt == self.max_retries - 1:
                     raise
-                wait = 2 ** attempt
-                logger.warning("Falha ao gerar embeddings, tentando de novo em %ss", wait, exc_info=True)
+                wait = self._retry_delay(exc, default=2 ** attempt)
+                logger.warning("Falha ao gerar embeddings (%s), tentando de novo em %ss",
+                               type(exc).__name__, wait)
                 time.sleep(wait)
+
+    @staticmethod
+    def _retry_delay(exc: Exception, default: float) -> float:
+        """Em erro 429 (cota), a API diz quanto esperar em 'retryDelay' (ex.: '49s').
+        Usamos esse valor (+1s de folga). Nos outros erros, o backoff exponencial."""
+        if getattr(exc, "code", None) != 429:
+            return default
+        try:
+            for item in exc.details["error"]["details"]:
+                if "retryDelay" in item:
+                    return min(float(item["retryDelay"].rstrip("s")) + 1, 120)
+        except Exception:
+            pass
+        return 60.0  # 429 sem a dica: espera a janela de 1 minuto
 
 
 class FakeEmbedder(EmbeddingProvider):

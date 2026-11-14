@@ -64,6 +64,41 @@ def test_gemini_retry_recupera(monkeypatch):
     assert len(client.calls) == 3
 
 
+class QuotaError(Exception):
+    code = 429
+
+    def __init__(self, details):
+        self.details = details
+
+
+def test_429_espera_o_retry_delay_informado_pela_api():
+    err = QuotaError({"error": {"details": [{"@type": "x"}, {"retryDelay": "49s"}]}})
+    assert GeminiEmbedder._retry_delay(err, default=1) == 50.0
+
+
+def test_429_sem_dica_espera_60s_e_outros_erros_usam_backoff():
+    assert GeminiEmbedder._retry_delay(QuotaError({}), default=1) == 60.0
+    assert GeminiEmbedder._retry_delay(RuntimeError("x"), default=4) == 4
+
+
+def test_gemini_dorme_o_tempo_do_429(monkeypatch):
+    waits = []
+    monkeypatch.setattr(embeddings.time, "sleep", waits.append)
+    client = FakeClient()
+    original = client.embed_content
+    state = {"n": 0}
+
+    def flaky(model, contents, config):
+        state["n"] += 1
+        if state["n"] == 1:
+            raise QuotaError({"error": {"details": [{"retryDelay": "10s"}]}})
+        return original(model, contents, config)
+
+    client.embed_content = flaky
+    GeminiEmbedder(client=client).embed_query("x")
+    assert waits == [11.0]
+
+
 def test_gemini_retry_esgota(monkeypatch):
     monkeypatch.setattr(embeddings.time, "sleep", lambda s: None)
     with pytest.raises(RuntimeError):
