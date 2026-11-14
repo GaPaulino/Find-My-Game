@@ -27,10 +27,12 @@ class Game:
     def from_dict(cls, data: dict) -> "Game":
         """Constrói um Game a partir de um dict da IGDB (campos podem faltar)."""
         rating = data.get("total_rating")
+        summary = data.get("summary")
+        genres = data.get("genres")
         return cls(
             name=data.get("name", ""),
-            summary=data.get("summary") or "",
-            genres=list(data.get("genres") or []),
+            summary=summary if isinstance(summary, str) else "",  # None/NaN -> ""
+            genres=[] if genres is None else list(genres),  # aceita list ou array numpy
             rating=None if rating is None or rating != rating else float(rating),  # rating != rating => NaN
             id=data.get("id"),
         )

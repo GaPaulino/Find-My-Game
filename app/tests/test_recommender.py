@@ -21,6 +21,12 @@ def test_game_from_dict_tolera_campos_ausentes_e_nan():
     assert g.summary == "" and g.genres == [] and g.rating is None
 
 
+def test_game_from_dict_aceita_nan_no_resumo_e_array_de_generos():
+    import numpy as np
+    g = Game.from_dict({"name": "X", "summary": float("nan"), "genres": np.array(["RPG", "Shooter"])})
+    assert g.summary == "" and g.genres == ["RPG", "Shooter"]
+
+
 def test_embedding_text_inclui_nome_generos_e_resumo():
     t = Game("A", "resumo", ["RPG"]).embedding_text()
     assert "A" in t and "RPG" in t and "resumo" in t
