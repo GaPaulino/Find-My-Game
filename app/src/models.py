@@ -11,6 +11,7 @@ class Game:
     summary: str = ""
     genres: list[str] = field(default_factory=list)
     rating: float | None = None
+    id: int | None = None
     embedding: np.ndarray | None = field(default=None, repr=False, compare=False)
 
     def embedding_text(self) -> str:
@@ -31,11 +32,13 @@ class Game:
             summary=data.get("summary") or "",
             genres=list(data.get("genres") or []),
             rating=None if rating is None or rating != rating else float(rating),  # rating != rating => NaN
+            id=data.get("id"),
         )
 
     def to_dict(self) -> dict:
         """Versão serializável (sem o embedding), usada nas respostas da API."""
         return {
+            "id": self.id,
             "name": self.name,
             "summary": self.summary,
             "genres": self.genres,
