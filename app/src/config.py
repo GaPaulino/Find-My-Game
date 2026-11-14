@@ -1,11 +1,14 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 from storage import DEFAULT_KEY, LocalStorage, S3Storage, Storage
 
 load_dotenv()
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 @dataclass(frozen=True)
@@ -39,7 +42,10 @@ class Settings:
     def build_storage(self) -> Storage:
         """Fábrica: escolhe a implementação de Storage conforme a configuração."""
         if self.local_data_dir:
-            return LocalStorage(self.local_data_dir)
+            path = Path(self.local_data_dir)
+            if not path.is_absolute():  # relativo à raiz do projeto, não à pasta atual
+                path = PROJECT_ROOT / path
+            return LocalStorage(path)
         if not self.bucket_name:
             raise ValueError("Defina BUCKET_NAME (S3) ou LOCAL_DATA_DIR (disco).")
         return S3Storage(self.bucket_name)

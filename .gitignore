@@ -9,3 +9,6 @@ __pycache__/
 dist/
 build/
 .venv/
+
+# catalogo gerado (regeneravel com main.py)
+/data/

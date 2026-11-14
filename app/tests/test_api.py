@@ -66,6 +66,12 @@ def test_erro_do_embedder_da_502():
     assert r.status_code == 502
 
 
+def test_local_data_dir_relativo_e_resolvido_pela_raiz_do_projeto():
+    from config import PROJECT_ROOT
+    storage = Settings(local_data_dir="data").build_storage()
+    assert storage.base_dir == PROJECT_ROOT / "data"
+
+
 def test_settings_escolhe_storage(tmp_path):
     assert isinstance(Settings(local_data_dir=str(tmp_path)).build_storage(), LocalStorage)
     with pytest.raises(ValueError):
